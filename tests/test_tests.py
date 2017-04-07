@@ -8,7 +8,7 @@ class test_tests(unittest.TestCase):
 
 def suite():
     suite = unittest.TestSuite()
-    suite.addTests(unittest.makeSuite(LayersTest, 'test'))
+    suite.addTests(unittest.makeSuite(test_tests, 'test'))
     return suite
 
 def run_tests():
