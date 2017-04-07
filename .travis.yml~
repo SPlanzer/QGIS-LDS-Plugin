@@ -1,0 +1,26 @@
+services:
+    - docker
+
+branches:
+  only:
+    - master
+
+env:
+  global:
+  - SCRIPT_DIR=iic
+  matrix:
+      - QGIS_VERSION_TAG=release PYTHON_EXECUTABLE=python PIP_EXECUTABLE=pip
+      - QGIS_VERSION_TAG=master_2 PYTHON_EXECUTABLE=python PIP_EXECUTABLE=pip
+
+before_install:
+    - docker pull boundlessgeo/qgis-testing-environment:${QGIS_VERSION_TAG}
+    - docker tag boundlessgeo/qgis-testing-environment:${QGIS_VERSION_TAG} qgis-testing-environment
+
+install:
+    - docker run -d --name qgis-testing-environment -v ${TRAVIS_BUILD_DIR}:/tests_directory -e DISPLAY=:99 qgis-testing-environment
+    - sleep 10
+    - docker exec -it qgis-testing-environment sh -c "qgis_setup.sh ${SCRIPT_DIR}"
+    - docker exec -it qgis-testing-environment sh -c "cd tests_directory/${SCRIPT_DIR}; ls"
+
+script:
+    - docker exec -it qgis-testing-environment sh -c "qgis_testrunner.sh $tests.test_script_framework.run_tests; "
