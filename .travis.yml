@@ -4,7 +4,8 @@ services:
 
 env:
   global:
-  - SCRIPT_DIR=PLUGIN_DIR
+  - PLUGIN_DIR=LDS_Plugin
+
   matrix:
       - QGIS_VERSION_TAG=release PYTHON_EXECUTABLE=python PIP_EXECUTABLE=pip
       - QGIS_VERSION_TAG=master_2 PYTHON_EXECUTABLE=python PIP_EXECUTABLE=pip
