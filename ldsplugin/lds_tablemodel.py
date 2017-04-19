@@ -38,6 +38,8 @@ class LDSTableModel(QAbstractTableModel):
 
     def __init__(self, data = [[]], headers = [], parent=None):
         QAbstractTableModel.__init__(self, parent)
+        #if not data:
+        #    data = [['','','','']]
         self.arraydata = data
         self.header = headers
 
@@ -54,6 +56,10 @@ class LDSTableModel(QAbstractTableModel):
             return None
         return unicode(self.arraydata[index.row()][index.column()])
     
+    def setData(self, data):
+        # not used for editing but bulk setting all data in table
+        self.arraydata = data
+        
     def abstract(self, row):
         ''' 
         return the datasets abstract'''
@@ -63,7 +69,7 @@ class LDSTableModel(QAbstractTableModel):
         if orientation == Qt.Horizontal and role == Qt.DisplayRole:
             return self.header[col]
         return None
-
+    
     def flags(self, index):
         return Qt.ItemIsEditable | Qt.ItemIsEnabled | Qt.ItemIsSelectable #obviously not the final product
 

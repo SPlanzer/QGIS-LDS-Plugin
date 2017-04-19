@@ -20,14 +20,16 @@
 """
 from PyQt4.QtCore import QSettings, QTranslator, qVersion, QCoreApplication, Qt
 
-from PyQt4.QtGui import QAction, QIcon, QSortFilterProxyModel
-from LDSTableModelView import LDSTableModel, LDSTableView
-from owslib.wms import WebMapService
+from PyQt4.QtGui import QAction, QIcon, QSortFilterProxyModel, QHeaderView
+from lds_tablemodel import LDSTableModel, LDSTableView
+from lds_interface import LdsInterface
+
 # Initialize Qt resources from file resources.py
 import resources
 # Import the code for the dialog
 from QgisLdsPlugin_dialog import QgisLdsPluginDialog
 import os.path
+
 
 #temp
 from qgis.gui import QgsMessageBar
@@ -68,7 +70,13 @@ class QgisLdsPlugin:
         # TODO: We are going to let the user set this up in a future iteration
         self.toolbar = self.iface.addToolBar(u'QgisLdsPlugin')
         self.toolbar.setObjectName(u'QgisLdsPlugin')
-
+        
+        # Track data reading
+        self.service_data = None
+        
+        # LDS request interface
+        self.lds_interface = LdsInterface()
+        
     # noinspection PyMethodMayBeStatic
     def tr(self, message):
         """Get the translation for a string using Qt translation API.
@@ -147,18 +155,7 @@ class QgisLdsPlugin:
         self.actions.append(action)
 
         return action
-    
-    
-    def setAPIKey(self):
-        key = self.dlg.uTextAPIKey.text()
-        QSettings().setValue('ldsplugin/apikey', key) 
-    
-    def ldsAPIKey(self):
-        key = QSettings().value('ldsplugin/apikey') 
-        if key:
-            return key
-        else: 'Please enter your API key'
-    
+  
     def initGui(self):
         """Create the menu entries and toolbar icons inside the QGIS GUI."""
 
@@ -179,53 +176,81 @@ class QgisLdsPlugin:
             self.iface.removeToolBarIcon(action)
         # remove the toolbar
         del self.toolbar
-        
+    
+    def set_api_key(self):
+        key = self.dlg.uTextAPIKey.text()
+        if key:
+            QSettings().setValue('ldsplugin/apikey', key) 
+            self.lds_interface.update_api_key()
+            self.setTableModelView()
+        else:
+            pass# TODO - RAISE ERROR "YOU DIDN'T WRITE ANYTHING!"
         
     def userSelection(self, selected):
-        sourceIndex = self.proxyModel.mapToSource(selected)
-        abstract = self.model.abstract(sourceIndex.row())
+        sourceIndex = self.proxy_model.mapToSource(selected)
+        abstract = self.table_model.abstract(sourceIndex.row())
         self.dlg.uTextDescription.setText(abstract)
     
     def filterTable(self):
         filter_text = self.dlg.uTextFilter.text()
-        self.proxyModel.setFilterKeyColumn(2)
-        self.proxyModel.setFilterCaseSensitivity(Qt.CaseInsensitive)
-        self.proxyModel.setFilterRegExp(filter_text)
+        self.proxy_model.setFilterKeyColumn(2)
+        self.proxy_model.setFilterCaseSensitivity(Qt.CaseInsensitive)
+        self.proxy_model.setFilterRegExp(filter_text)
+    
+    def TableModelView(self):
+        # Set Table Model
+        headers = ["id", "service", "layer", 'hidden']
+        self.proxy_model = QSortFilterProxyModel()
+        self.table_view = self.dlg.uDatasetsTableView
+        self.table_model = LDSTableModel(self.service_data, headers)
+        self.proxy_model.setSourceModel(self.table_model)
+        self.table_view.setModel(self.proxy_model)
+        self.table_view.resizeColumnsToContents()
+        self.table_view.setSortingEnabled(True)            
+        
+        # Trigger updating of data abstract on user selection
+        selectionModel = self.table_view.selectionModel()
+        selectionModel.currentRowChanged.connect(self.userSelection)
+        
+        # Table filtering trigger
+        self.dlg.uTextFilter.textChanged.connect(self.filterTable)
+        
+
+    
+    def setTableModelView(self):
+        # Trigger the saving of api key
+        self.dlg.uBtnSaveKey.pressed.connect(self.set_api_key)
+        self.dlg.uTextAPIKey.setPlaceholderText(self.lds_interface.get_api_key())
+        # Ensure an api key has been persisted 
+        if not self.lds_interface.get_api_key():
+            # if not, Have the users add the key
+            # and do not attempt to make kds requests
+            self.dlg.tabWidget.setCurrentIndex(1)
+        else:
+            # only request service data once
+            if not self.service_data:
+                try:
+                    self.service_data = self.lds_interface.get_all_services()
+                except:
+                    self.iface.messageBar().pushMessage("Error", 
+                                                   'LDS http request failed. Please check your API key', 
+                                                   level=QgsMessageBar.CRITICAL)
+                    return
+
+            self.TableModelView()
         
     def run(self):
         """Run method that performs all the real work"""
+        # Get table data
+        
+        self.setTableModelView()
+        
 
-        
-        # GET LDS DATA
-        # TODO - Move to data handling to own class
-        data = []
-        key = self.ldsAPIKey() #TODO - handle - key not set situations
-        wms = WebMapService('https://data.linz.govt.nz/services;key='+key+'/wms/', version='1.1.1')
-        cont = (wms.contents)
-        
-        for c in cont:
-            data.append([wms[c].id, "WMS" , wms[c].title, wms[c].abstract])
-        
-        # TABLE VIEW AND MODEL
-        headers = ["id", "service", "layer", 'hidden']
-        self.proxyModel = QSortFilterProxyModel()
-        self.view = self.dlg.uDatasetsTableView
-        self.model = LDSTableModel(data, headers)
-        self.proxyModel.setSourceModel(self.model)
-        self.view.setModel(self.proxyModel)
-        self.view.resizeColumnsToContents()
-        self.view.setSortingEnabled(True)            
-        
-        selectionModel = self.view.selectionModel()
-        selectionModel.currentRowChanged.connect(self.userSelection)
-        
-        self.dlg.uTextFilter.textChanged.connect(self.filterTable)
-        
-        self.dlg.uBtnSaveKey.pressed.connect(self.setAPIKey)
-        self.dlg.uTextAPIKey.setPlaceholderText(self.ldsAPIKey())
-        
         # show the dialog
+        
         self.dlg.show()
+        #TODO - Clear all selections in table view and text edit prior to opening
+        
         # Run the dialog event loop
         result = self.dlg.exec_()
         # See if OK was pressed
