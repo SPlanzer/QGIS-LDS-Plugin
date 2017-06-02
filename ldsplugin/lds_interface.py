@@ -3,6 +3,8 @@ from owslib.wfs import WebFeatureService
 from owslib.wmts import WebMapTileService
 from PyQt4.QtCore import QSettings
 
+import re
+
 class LdsInterface():
     def __init__(self):
         self.api_key = self.get_api_key()
@@ -16,23 +18,9 @@ class LdsInterface():
     
     def update_api_key(self):
             self.api_key = self.get_api_key()
-    
-    def get_all_services(self):
-        service_data = []
-        for data in [self.get_wfs(), self.get_wms(), self.get_wmts()]:
-            service_data.extend(data)
-        return service_data
-    
-    def get_wfs(self):
-        resp = self.request('WFS')
-        return self.service_info(resp)
-     
-    def get_wmts(self):
-        resp = self.request('WMTS')
-        return self.service_info(resp)
-    
-    def get_wms(self):
-        resp = self.request('WMS')
+       
+    def get_service_data(self, service):
+        resp = self.request(service)
         return self.service_info(resp)
     
     def request(self, service):
@@ -46,12 +34,18 @@ class LdsInterface():
         #except:
         #    pass
             #how do I get at owslibs exceptions?
-            
+                        
     def service_info(self, resp):
         service_data = []
         cont = (resp.contents)
         
         for c in cont:
-            service_data.append([resp[c].id, resp.identification.type, resp[c].title, resp[c].abstract])
+            # standardise the different services string formatting
+            cont_id = re.search(r'([aA-zZ]+\.[aA-zZ]+\.[aA-zZ]+\.[aA-zZ]+\:)?(?P<type>[aA-zZ]+)-(?P<id>[0-9]+)', resp[c].id)
+            type = cont_id.group('type')
+            id  =  cont_id.group('id')
+            service_type = resp.identification.type.upper().strip('OGC:')
+                        
+            service_data.append([type, id, service_type, resp[c].title, resp[c].abstract])
         return service_data
     

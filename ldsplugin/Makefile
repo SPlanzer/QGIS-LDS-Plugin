@@ -46,7 +46,7 @@ PY_FILES = \
 	__init__.py \
 	QgisLdsPlugin.py QgisLdsPlugin_dialog.py
 
-UI_FILES = QgisLdsPlugin_dialog_base.ui
+UI_FILES = QgisLdsPlugin_dialog_base.ui m
 
 EXTRAS = metadata.txt icon.png
 

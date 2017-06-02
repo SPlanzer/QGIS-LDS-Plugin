@@ -4,6 +4,7 @@ from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 import sys
 
+
 class LDSTableView(QTableView):
     
     """
@@ -11,6 +12,8 @@ class LDSTableView(QTableView):
     @param QTableView: Inherits from QtGui.QWidget
     @param QTableView: QtGui.QTableView()
     """
+    
+    # TODO // REMOVE
     
     #rowSelected = pyqtSignal( int, name="rowSelected" )
     #rowSelectionChanged = pyqtSignal( name="rowSelectionChanged" )
@@ -38,8 +41,6 @@ class LDSTableModel(QAbstractTableModel):
 
     def __init__(self, data = [[]], headers = [], parent=None):
         QAbstractTableModel.__init__(self, parent)
-        #if not data:
-        #    data = [['','','','']]
         self.arraydata = data
         self.header = headers
 
@@ -57,13 +58,15 @@ class LDSTableModel(QAbstractTableModel):
         return unicode(self.arraydata[index.row()][index.column()])
     
     def setData(self, data):
-        # not used for editing but bulk setting all data in table
+        # not used for editing but refreshing all data in table
+        self.layoutAboutToBeChanged.emit()
         self.arraydata = data
-        
-    def abstract(self, row):
+        self.layoutChanged.emit()
+                
+    def selectedRow(self, row):
         ''' 
         return the datasets abstract'''
-        return self.arraydata[row][3]
+        return self.arraydata[row]
     
     def headerData(self, col, orientation, role):
         if orientation == Qt.Horizontal and role == Qt.DisplayRole:
