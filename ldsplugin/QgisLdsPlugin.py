@@ -319,7 +319,7 @@ class QgisLdsPlugin:
         # check a selection has been made
         # close dlg     
         # zoom to layer
-        key = '0aab3b43c5b340e096fbbb0ffc52c784'
+        key = ''
         
         
 
