@@ -22,7 +22,9 @@ from PyQt4.QtGui import QAction, QIcon, QSortFilterProxyModel, QHeaderView, QMen
 from qgis.core import QgsRasterLayer, QgsVectorLayer, QgsMapLayerRegistry
 from lds_tablemodel import LDSTableModel, LDSTableView
 from lds_interface import LdsInterface
-import re #temp
+from ApiKey import ApiKey
+import re
+from qgis.core import QgsMessageLog # TEMP
 
 # Initialize Qt resources from file resources.py
 import resources
@@ -95,8 +97,10 @@ class QgisLdsPlugin:
         self.service = None
         self.layer_title = None   
         # LDS request interface
-        self.lds_interface = LdsInterface()
+        self.api_key = ApiKey()
+        self.lds_interface = LdsInterface(self.api_key)
         
+        self.version = {'wfs': '2.0.0', 'wms': '1.1.1' , 'wmts': '1.0.0'}
         
     # noinspection PyMethodMayBeStatic
     def tr(self, message):
@@ -167,9 +171,9 @@ class QgisLdsPlugin:
         self.service_dlg = ServiceDialog()
         self.apikey_dlg = ApiKeyDialog()
         
-        self.apikey_dlg.buttonBox.accepted.connect(self.set_api_key)
+        self.apikey_dlg.buttonBox.accepted.connect(self.setApiKey)
         
-        icon_path = ':/plugins/QgisLdsPlugin/icon.png' # can do a much better job using dir+
+        icon_path = ':/plugins/QgisLdsPlugin/icon.png'
         self.load_all = self.addAction(
             icon_path,
             text=self.tr(u'Load All LDS Services'),
@@ -194,11 +198,11 @@ class QgisLdsPlugin:
             callback=self.loadWFS,
             parent=self.iface.mainWindow())
 
-        self.im_feeling_lucky = self.addAction(
-            icon_path,
-            text=self.tr(u"I'm feeling lucky"),
-            callback=self.imFeelingLucky,
-            parent=self.iface.mainWindow())
+#         self.im_feeling_lucky = self.addAction(
+#             icon_path,
+#             text=self.tr(u"I'm feeling lucky"),
+#             callback=self.imFeelingLucky,
+#             parent=self.iface.mainWindow())
         
         self.manage_api_key = self.addAction(
             icon_path,
@@ -227,10 +231,9 @@ class QgisLdsPlugin:
         # remove the toolbar
         del self.toolbar
     
-    def set_api_key(self):
+    def setApiKey(self):
         key = self.apikey_dlg.uTextAPIKey.text()
-        QSettings().setValue('ldsplugin/apikey', key) 
-        self.lds_interface.update_api_key()
+        self.api_key.set_api_key(key)
         
     def userSelection(self, selected):
         sourceIndex = self.proxy_model.mapToSource(selected)
@@ -309,35 +312,34 @@ class QgisLdsPlugin:
     
     def imFeelingLucky(self):
         pass
+        # place holder - pop up "GO TO JAIL: Go directly to Jail. Do not pass Go. Do not collect $200"
+        #OR "You Have won SECOND PRIZE in a BEAUTY CONTEST collect $10"
+        # Community chest
     
     def manageApiKey(self):
+        curr_key = self.api_key.get_api_key()
+        if curr_key == '':
+            curr_key = 'No API Key stored. Please save a valid API Key'
+        self.apikey_dlg.uTextAPIKey.setPlaceholderText(curr_key)
         self.apikey_dlg.show()
 
     def importDataset(self):
-        # 1. IS raster or vector 
-        # format url    
-        # check a selection has been made
-        # close dlg     
-        # zoom to layer
-        key = ''
-        
-        
-
-        if self.service == "WFS":
-            version = '1.0.0' 
-        else:
-            version = '1.1.1'
-        #url = ("https://data.linz.govt.nz/services;key={0}/{1}/{2}?SERVICE={3}&VERSION={4}&REQUEST=GetMap&typename=data.linz.govt.nz:{2}").format(key, service.lower(), id, service.upper(), version )
-        
-        #url = ("https://data.linz.govt.nz/services;key={0}/{1}?SERVICE={3}&VERSION={4}&REQUEST=GetFeature&srsname=EPSG:2193&typeNames={5}-{2}").format(key, self.service.lower(), self.id, self.service.upper(), version, self.service_type, )
-        url = ("https://data.linz.govt.nz/services;key={0}/{1}?SERVICE={3}&VERSION={4}&REQUEST=GetFeature&typeNames={5}-{2}").format(key, self.service.lower(), self.id, self.service.upper(), version, self.service_type, )
-       
-       #https://data.linz.govt.nz/services;key=0aab3b43c5b340e096fbbb0ffc52c784/wms?service=WMS&version=1.1.1&request=GetMap&layers=layer-2087
-       url = 
-      
-        self.iface.addVectorLayer(url,
+        QgsMessageLog.logMessage(self.api_key.get_api_key(), 'API_KEY', QgsMessageLog.INFO) # TEMP
+        #add espg
+        if self.service == "WFS":        
+            url = ("https://data.linz.govt.nz/services;key={0}/{1}/{5}-{2}?SERVICE={3}&VERSION={4}&REQUEST=GetFeature&typename=data.linz.govt.nz:{5}-{2}").format(self.api_key.get_api_key(), self.service.lower(), self.id, self.service.upper(), self.version[self.service.lower()], self.service_type)
+            layer = QgsVectorLayer(url,
                                   self.layer_title,
-                                  self.service.upper())   
-        self.service_dlg.close()
+                                  self.service.lower())  
         
-    
+        else: 
+            uri = "crs=EPSG:{0}&dpiMode=7&format=image/png&layers={1}-{2}&styles=&url=https://data.linz.govt.nz/services;key={3}/{4}/{1}-{2}?version={5}".format(2193, self.service_type, self.id, self.api_key.get_api_key(), self.service.lower(), self.version[self.service.lower()])
+            layer = QgsRasterLayer(uri,
+                                   self.layer_title,
+                                   self.service.lower())
+        #TO DO test if this later gonna work
+        v = layer.isValid() 
+                            
+        QgsMapLayerRegistry.instance().addMapLayer(layer)
+ 
+        self.service_dlg.close()
