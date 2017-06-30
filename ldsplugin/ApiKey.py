@@ -1,4 +1,3 @@
-from qgis.core import QgsMessageLog # TEMP
 from PyQt4.QtCore import QSettings
 
 class ApiKey():
@@ -13,6 +12,3 @@ class ApiKey():
     
     def set_api_key(self, key):
         QSettings().setValue('ldsplugin/apikey', key) 
-
-      
-        QgsMessageLog.logMessage(self.api_key, 'API_KEY', QgsMessageLog.INFO) # TEMP

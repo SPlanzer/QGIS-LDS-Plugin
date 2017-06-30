@@ -24,13 +24,14 @@ from lds_tablemodel import LDSTableModel, LDSTableView
 from lds_interface import LdsInterface
 from ApiKey import ApiKey
 import re
-from qgis.core import QgsMessageLog # TEMP
 
 # Initialize Qt resources from file resources.py
 import resources
 # Import the code for the dialog
 from gui.Service_dialog import ServiceDialog #TODO // standardise UI naming conventions
 from gui.ApiKey_dialog  import ApiKeyDialog
+from gui.Help_dialog  import HelpDialog
+
 #from gui.Test import Test
 import os.path
 
@@ -59,6 +60,7 @@ class QgisLdsPlugin:
         """
         # Save reference to the QGIS interface
         self.iface = iface        
+        self.canvas = self.iface.mapCanvas()
 
         # initialize plugin directory
         self.plugin_dir = os.path.dirname(__file__)
@@ -170,10 +172,12 @@ class QgisLdsPlugin:
                 # Create the dialog (after translation) and keep reference
         self.service_dlg = ServiceDialog()
         self.apikey_dlg = ApiKeyDialog()
+        self.help_dlg = HelpDialog()
         
         self.apikey_dlg.buttonBox.accepted.connect(self.setApiKey)
         
         icon_path = ':/plugins/QgisLdsPlugin/icon.png'
+                
         self.load_all = self.addAction(
             icon_path,
             text=self.tr(u'Load All LDS Services'),
@@ -210,11 +214,17 @@ class QgisLdsPlugin:
             callback=self.manageApiKey,
             parent=self.iface.mainWindow())
         
+        self.about_dlg = self.addAction(
+            icon_path,
+            text=self.tr(u'About'),
+            callback=self.about,
+            parent=self.iface.mainWindow())
+        
         for action in self.actions:
             self.popup_menu.addAction(action)
         
         self.tool_button.setMenu(self.popup_menu)
-        self.tool_button.setDefaultAction(self.load_all)
+        self.tool_button.setDefaultAction(self.about_dlg)
         self.tool_button.setPopupMode(QToolButton.MenuButtonPopup)
         self.toolbar.addWidget( self.tool_button )
         
@@ -254,7 +264,7 @@ class QgisLdsPlugin:
     
     def setTableModelView(self):
         # Set Table Model
-        data = [['g','h','j','k']]
+        data = [['','','','']]
         
         headers = ['type','id', 'service', 'layer', 'hidden']
         self.proxy_model = QSortFilterProxyModel()
@@ -275,6 +285,8 @@ class QgisLdsPlugin:
         # Import Button Clicked
         self.service_dlg.uBtnImport.clicked.connect(self.importDataset)
 
+    def about(self):
+        self.help_dlg.show()
         
     def loadAllServices(self):
         all_data = []
@@ -315,7 +327,16 @@ class QgisLdsPlugin:
         # place holder - pop up "GO TO JAIL: Go directly to Jail. Do not pass Go. Do not collect $200"
         #OR "You Have won SECOND PRIZE in a BEAUTY CONTEST collect $10"
         # Community chest
-    
+        
+        ''' IF DICTIONARY HAS SOME DATA MAKE SELECTION FROM THIS DATA.
+        ELSE RANDOMLY SELECT A DATA TYPE AND ADD
+        
+        THEREFORE THREE METHODS.
+        1/ HAS DATA
+        2/ RANDOMLLY SELECT DATA TYPE
+        3/ RANDOMLY SELECT LAYER
+        '''
+        
     def manageApiKey(self):
         curr_key = self.api_key.get_api_key()
         if curr_key == '':
@@ -324,21 +345,22 @@ class QgisLdsPlugin:
         self.apikey_dlg.show()
 
     def importDataset(self):
-        QgsMessageLog.logMessage(self.api_key.get_api_key(), 'API_KEY', QgsMessageLog.INFO) # TEMP
-        #add espg
+        # MVP read current map projection, make use of OTFP
+        epsg = self.canvas.mapRenderer().destinationCrs().authid() 
+        
         if self.service == "WFS":        
-            url = ("https://data.linz.govt.nz/services;key={0}/{1}/{5}-{2}?SERVICE={3}&VERSION={4}&REQUEST=GetFeature&typename=data.linz.govt.nz:{5}-{2}").format(self.api_key.get_api_key(), self.service.lower(), self.id, self.service.upper(), self.version[self.service.lower()], self.service_type)
+            url = ("https://data.linz.govt.nz/services;key={0}/{1}?SERVICE={1}&VERSION={2}&REQUEST=GetFeature&TYPENAME=data.linz.govt.nz:{3}-{4}").format(self.api_key.get_api_key(), self.service.lower(), self.version[self.service.lower()], self.service_type, self.id)
             layer = QgsVectorLayer(url,
                                   self.layer_title,
-                                  self.service.lower())  
+                                  self.service.upper())  
         
         else: 
-            uri = "crs=EPSG:{0}&dpiMode=7&format=image/png&layers={1}-{2}&styles=&url=https://data.linz.govt.nz/services;key={3}/{4}/{1}-{2}?version={5}".format(2193, self.service_type, self.id, self.api_key.get_api_key(), self.service.lower(), self.version[self.service.lower()])
+            uri = "crs=EPSG:{0}&dpiMode=7&format=image/png&layers={1}-{2}&styles=&url=https://data.linz.govt.nz/services;key={3}/{4}/{1}-{2}?version={5}".format(epsg, self.service_type, self.id, self.api_key.get_api_key(), self.service.lower(), self.version[self.service.lower()])
             layer = QgsRasterLayer(uri,
                                    self.layer_title,
                                    self.service.lower())
-        #TO DO test if this later gonna work
-        v = layer.isValid() 
+#         #TO DO test if this later gonna work
+#         v = layer.isValid() 
                             
         QgsMapLayerRegistry.instance().addMapLayer(layer)
  

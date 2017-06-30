@@ -11,6 +11,7 @@ class LdsInterface():
         self.key = self.api_key.get_api_key()
         
     def get_service_data(self, service):
+        # TODO // GET SO MANT TIMEOUTS. must habdle these
         resp = self.request(service)
         return self.service_info(resp)
     
