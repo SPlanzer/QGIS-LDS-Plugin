@@ -20,9 +20,13 @@ class LdsInterface():
         if service == 'WMS':
             return WebMapService('https://data.linz.govt.nz/services;key='+self.key+'/wms/', version='1.1.1')
         if service == 'WMTS':
-            return WebMapTileService('https://data.linz.govt.nz/services;key='+self.key+'/wmts/1.0.0/WMTSCapabilities.xml', version='1.0.0')
+            
+            return WebMapTileService('https://data.linz.govt.nz/services;key='+self.key+'/wmts/1.0.0/layer/1455/WMTSCapabilities.xml?count=10', version='1.0.0')
+            #return WebMapTileService('https://data.linz.govt.nz/services;key='+self.key+'/wmts/1.0.0/WMTSCapabilities.xml?count=10', version='1.0.0')
         if service == 'WFS':
             return WebFeatureService('https://data.linz.govt.nz/services;key='+self.key+'/wfs/?service=WFS&request=GetCapabilities', version='1.1.0')
+        
+        
         #except:
         #    pass
             #how do I get at owslibs exceptions?

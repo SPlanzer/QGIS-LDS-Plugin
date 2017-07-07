@@ -23,6 +23,7 @@ from qgis.core import QgsRasterLayer, QgsVectorLayer, QgsMapLayerRegistry
 from lds_tablemodel import LDSTableModel, LDSTableView
 from lds_interface import LdsInterface
 from ApiKey import ApiKey
+from Html import Html #poor name?
 import re
 
 # Initialize Qt resources from file resources.py
@@ -172,7 +173,7 @@ class QgisLdsPlugin:
                 # Create the dialog (after translation) and keep reference
         self.service_dlg = ServiceDialog()
         self.apikey_dlg = ApiKeyDialog()
-        self.help_dlg = HelpDialog()
+        self.about_dlg = HelpDialog()
         
         self.apikey_dlg.buttonBox.accepted.connect(self.setApiKey)
         
@@ -214,22 +215,25 @@ class QgisLdsPlugin:
             callback=self.manageApiKey,
             parent=self.iface.mainWindow())
         
-        self.about_dlg = self.addAction(
+        self.about = self.addAction(
             icon_path,
             text=self.tr(u'About'),
-            callback=self.about,
+            callback=self.aboutShow,
             parent=self.iface.mainWindow())
         
         for action in self.actions:
             self.popup_menu.addAction(action)
         
         self.tool_button.setMenu(self.popup_menu)
-        self.tool_button.setDefaultAction(self.about_dlg)
+        self.tool_button.setDefaultAction(self.about)
         self.tool_button.setPopupMode(QToolButton.MenuButtonPopup)
         self.toolbar.addWidget( self.tool_button )
         
         #set table model
         self.setTableModelView()
+        #set about html
+        html = Html()
+        self.about_dlg.uiHtmlDlg.setHtml(html.aboutHtml())
         
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
@@ -285,8 +289,8 @@ class QgisLdsPlugin:
         # Import Button Clicked
         self.service_dlg.uBtnImport.clicked.connect(self.importDataset)
 
-    def about(self):
-        self.help_dlg.show()
+    def aboutShow(self):
+        self.about_dlg.show()
         
     def loadAllServices(self):
         all_data = []
@@ -354,11 +358,12 @@ class QgisLdsPlugin:
                                   self.layer_title,
                                   self.service.upper())  
         
-        else: 
-            uri = "crs=EPSG:{0}&dpiMode=7&format=image/png&layers={1}-{2}&styles=&url=https://data.linz.govt.nz/services;key={3}/{4}/{1}-{2}?version={5}".format(epsg, self.service_type, self.id, self.api_key.get_api_key(), self.service.lower(), self.version[self.service.lower()])
+        else:
+            uri = "crs={0}&dpiMode=7&format=image/png&layers={1}-{2}&styles=&url=https://data.linz.govt.nz/services;key={3}/{4}/{1}-{2}?version={5}".format(epsg, self.service_type, self.id, self.api_key.get_api_key(), self.service.lower(), self.version[self.service.lower()])
             layer = QgsRasterLayer(uri,
                                    self.layer_title,
-                                   self.service.lower())
+                                   'wms') # For WMTS and WMS #https://gis.stackexchange.com/questions/207995/how-to-load-a-wmts-layer-in-qgis-using-pyqgis
+                                   #self.service.lower())
 #         #TO DO test if this later gonna work
 #         v = layer.isValid() 
                             
