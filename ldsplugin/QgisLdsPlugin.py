@@ -18,8 +18,9 @@
  ***************************************************************************/
 """
 from PyQt4.QtCore import QSettings, QTranslator, qVersion, QCoreApplication, Qt
-from PyQt4.QtGui import QAction, QIcon, QSortFilterProxyModel, QHeaderView, QMenu, QToolButton
+from PyQt4.QtGui import QAction, QIcon, QListWidgetItem, QSortFilterProxyModel, QHeaderView, QMenu, QToolButton
 from qgis.core import QgsRasterLayer, QgsVectorLayer, QgsMapLayerRegistry
+from qgis.gui import QgsMessageBar
 from lds_tablemodel import LDSTableModel, LDSTableView
 from lds_interface import LdsInterface
 from ApiKey import ApiKey
@@ -37,15 +38,15 @@ from gui.Help_dialog  import HelpDialog
 import os.path
 
 
-#temp
+#temploadWMS
 from qgis.gui import QgsMessageBar
+from owslib import wfs, wms, wmts
 
 # Dev only - debugging
 try:
     import sys
-    sys.path.append('/opt/eclipse/plugins/org.python.pydev_4.4.0.201510052309/pysrc')
+    sys.path.append('/home/splanzer/.p2/pool/plugins/org.python.pydev_5.8.0.201706061859/pysrc')
     from pydevd import settrace, GetGlobalDebugger
-    settrace()
 except:
     pass
 
@@ -85,7 +86,7 @@ class QgisLdsPlugin:
 
         self.toolbar = self.iface.addToolBar(u'QgisLdsPlugin')
         self.toolbar.setObjectName(u'QgisLdsPlugin')
-        self.popup_menu = QMenu(self.toolbar)
+#        self.popup_menu = QMenu(self.toolbar)
         
         self.tool_button = QToolButton()
         
@@ -118,7 +119,7 @@ class QgisLdsPlugin:
         return QCoreApplication.translate('QgisLdsPlugin', message)
 
 
-    def addAction(
+    def add_action(
         self,
         icon_path,
         text,
@@ -130,111 +131,218 @@ class QgisLdsPlugin:
         whats_this=None,
         parent=None):
         """Add a toolbar icon to the toolbar.
+
         :param icon_path: Path to the icon for this action. Can be a resource
             path (e.g. ':/plugins/foo/bar.png') or a normal file system path.
         :type icon_path: str
+
         :param text: Text that should be shown in menu items for this action.
         :type text: str
+
         :param callback: Function to be called when the action is triggered.
-        :type callback: functionApiKey_dialog
+        :type callback: function
+
         :param enabled_flag: A flag indicating if the action should be enabled
             by default. Defaults to True.
-        :type enabled_flag: bool
+        :type enabled_flag: boloadWMSol
+
         :param add_to_menu: Flag indicating whether the action should also
             be added to the menu. Defaults to True.
         :type add_to_menu: bool
+
         :param add_to_toolbar: Flag indicating whether the action should also
-            be added to the toolbar. DefaulApiKey_dialogts to True.
+            be added to the toolbar. Defaults to True.
         :type add_to_toolbar: bool
+
         :param status_tip: Optional text to show in a popup when mouse pointer
             hovers over the action.
         :type status_tip: str
+
         :param parent: Parent widget for the new action. Defaults None.
         :type parent: QWidget
+
         :param whats_this: Optional text to show in the status bar when the
             mouse pointer hovers over the action.
+
         :returns: The action that was created. Note that the action is also
             added to self.actions list.
-        :rtypeQmenu: QAction
+        :rtype: QAction
         """
+
         icon = QIcon(icon_path)
         action = QAction(icon, text, parent)
         action.triggered.connect(callback)
         action.setEnabled(enabled_flag)
-        
-        #tool_button_menu,addAction(action)
-        
+
+        if status_tip is not None:
+            action.setStatusTip(status_tip)
+
+        if whats_this is not None:
+            action.setWhatsThis(whats_this)
+
+        if add_to_toolbar:
+            self.toolbar.addAction(action)
+
+        if add_to_menu:
+            self.iface.addPluginToVectorMenu(
+                self.menu,
+                action)
+
         self.actions.append(action)
+
         return action
-    
-    
+
     def initGui(self):
         """Create the menu entries and toolbar icons inside the QGIS GUI."""
-                # Create the dialog (after translation) and keep reference
-        self.service_dlg = ServiceDialog()
-        self.apikey_dlg = ApiKeyDialog()
-        self.about_dlg = HelpDialog()
-        
-        self.apikey_dlg.buttonBox.accepted.connect(self.setApiKey)
-        
+
         icon_path = ':/plugins/QgisLdsPlugin/icon.png'
+        self.add_action(
+            icon_path,
+            text=self.tr(u'Load LDS Data'),
+            callback=self.run,
+            parent=self.iface.mainWindow())
+        
+        self.service_dlg = ServiceDialog() # RENAME
+        self.stacked_widget = self.service_dlg.qStackedWidget
+        self.list_options = self.service_dlg.uListOptions
+        self.list_options.itemClicked.connect(self.showSelectedOption)
+        self.list_options.itemClicked.emit(self.list_options.item(0))
+        self.warning = self.service_dlg.uLabelWarning
+        
+        self.warning.hide()
+        # Change look of list widget
+        self.list_options.setStyleSheet(
+            """ QListWidget {
+                    background-color: rgb(105, 105, 105);
+                    outline: 0;
+                }
+                QListWidget::item {
+                    color: white;
+                    padding: 3px;
+                }
+                QListWidget::item::selected {
+                    color: black;
+                    background-color:palette(Window);
+                    padding-right: 0px;
+                };
+            """
+        )
                 
-        self.load_all = self.addAction(
-            icon_path,
-            text=self.tr(u'Load All LDS Services'),
-            callback=self.loadAllServices,
-            parent=self.iface.mainWindow())
+        item = QListWidgetItem("ALL")
+        image_path = os.path.join(os.path.dirname(__file__), "icons", "OpenRaster.png")
+        item.setIcon(QIcon(image_path))
+        self.list_options.addItem(item)
+
+        item = QListWidgetItem("WFS")
+        image_path = os.path.join(os.path.dirname(__file__), "icons", "OpenRaster.png")
+        item.setIcon(QIcon(image_path))
+        self.list_options.addItem(item)
+
+        item = QListWidgetItem("WMS")
+        image_path = os.path.join(os.path.dirname(__file__), "icons", "OpenRaster.png")
+        item.setIcon(QIcon(image_path))
+        self.list_options.addItem(item)
+
+        item = QListWidgetItem("WMTS")
+        image_path = os.path.join(os.path.dirname(__file__), "icons", "OpenRaster.png")
+        item.setIcon(QIcon(image_path))
+        self.list_options.addItem(item)
         
-        self.load_wmts = self.addAction(
-            icon_path,
-            text=self.tr(u'Load LDS WMTS'),
-            callback=self.loadWMTS,
-            parent=self.iface.mainWindow())
+        item = QListWidgetItem("Settings")
+        image_path = os.path.join(os.path.dirname(__file__), "icons", "OpenRaster.png")
+        item.setIcon(QIcon(image_path))
+        self.list_options.addItem(item)
 
-        self.load_wms = self.addAction(
-            icon_path,
-            text=self.tr(u'Load LDS WMS'),
-            callback=self.loadWMS,
-            parent=self.iface.mainWindow())
+        item = QListWidgetItem("About")
+        image_path = os.path.join(os.path.dirname(__file__), "icons", "OpenRaster.png")
+        item.setIcon(QIcon(image_path))
+        self.list_options.addItem(item)
+    
 
-        self.load_wfs = self.addAction(
-            icon_path,
-            text=self.tr(u'Load LDS WFS'),
-            callback=self.loadWFS,
-            parent=self.iface.mainWindow())
-
-#         self.im_feeling_lucky = self.addAction(
+#     def initGui(self):
+#         """Create the menu entries and toolbar icons inside the QGIS GUI."""
+#                 # Create the dialog (after translation) and keep reference
+#         self.service_dlg = ServiceDialog()
+# #         self.apikey_dlg = ApiKeyDialog()
+# #         self.about_dlg = HelpDialog()
+#     
+#         """Create the menu entries and toolbar icons inside the QGIS GUI."""
+# #         icon_path = ':/plugins/QgisLdsPlugin/icon.png'
+# #         self.add_action(
+# #             icon_path,
+# #             text=self.tr(u'Road Maintenance'),
+# #             callback=self.run,
+# #             parent=iface.mainWindow())
+# #         self.setupEnvironment()
+#         
+# #         self.apikey_dlg.buttonBox.accepted.connect(self.setApiKey)
+#         
+# #         icon_path = ':/plugins/QgisLdsPlugin/icon.png'
+# #                 
+# #         self.add_action = self.addAction(
+# #             icon_path,
+# #             text=self.tr(u'Load LDS Services'),
+# #             callback=self.loadAllServices,
+# #             parent=self.iface.mainWindow())
+#         
+# #         self.load_wmts = self.addAction(
+# #             icon_path,
+# #             text=self.tr(u'Load LDS WMTS'),
+# #             callback=self.loadWMTS,
+# #             parent=self.iface.mainWindow())
+# # 
+#         self.load_wms = self.addAction(
 #             icon_path,
-#             text=self.tr(u"I'm feeling lucky"),
-#             callback=self.imFeelingLucky,
+#             text=self.tr(u'Load LDS WMS'),
+#             callback=self.loadWMS,
 #             parent=self.iface.mainWindow())
-        
-        self.manage_api_key = self.addAction(
-            icon_path,
-            text=self.tr(u'Manage API Key'),
-            callback=self.manageApiKey,
-            parent=self.iface.mainWindow())
-        
-        self.about = self.addAction(
-            icon_path,
-            text=self.tr(u'About'),
-            callback=self.aboutShow,
-            parent=self.iface.mainWindow())
-        
-        for action in self.actions:
-            self.popup_menu.addAction(action)
-        
-        self.tool_button.setMenu(self.popup_menu)
-        self.tool_button.setDefaultAction(self.about)
-        self.tool_button.setPopupMode(QToolButton.MenuButtonPopup)
-        self.toolbar.addWidget( self.tool_button )
-        
+# # 
+# #         self.load_wfs = self.addAction(
+# #             icon_path,
+# #             text=self.tr(u'Load LDS WFS'),
+# #             callback=self.loadWFS,
+# #             parent=self.iface.mainWindow())
+# 
+# #         self.im_feeling_lucky = self.addAction(
+# #             icon_path,
+# #             text=self.tr(u"I'm feeling lucky"),
+# #             callback=self.imFeelingLucky,
+# #             parent=self.iface.mainWindow())
+#         #         icon_path = ':/plugins/QgisLdsPlugin/icon.png'
+# #         self.add_action(
+# #             icon_path,
+# #             text=self.tr(u'Road Maintenance'),
+# #             callback=self.run,
+# #             parent=iface.mainWindow())
+# #         self.setupEnvironment()
+# #         self.manage_api_key = self.addAction(
+# #             icon_path,
+# #             text=self.tr(u'Manage API Key'),
+# #             callback=self.manageApi        icon_path = ':/plugins/roads/icons/roads_plugin.png'
+# #Key,
+# #             parent=self.iface.mainWindow())
+# #         
+# #         self.about = self.addActi    def initGui(self):
+# 
+# #             icon_path,
+# #             text=self.tr(u'About'),
+# #             callback=self.aboutShow,
+# #             parent=self.iface.mainWindow())
+#         
+# #         for action in self.actions:
+# #             self.popup_menu.addAction(action)
+# #         
+# #         self.tool_button.setMenu(self.popup_menu)
+# #         self.tool_button.setDefaultAction(self.about)
+# #         self.tool_button.setPopupMode(QToolButton.MenuButtonPopup)
+# #         self.toolbar.addWidget( self.tool_button )
+#         
         #set table model
         self.setTableModelView()
-        #set about html
-        html = Html()
-        self.about_dlg.uiHtmlDlg.setHtml(html.aboutHtml())
-        
+#         #set about html
+# #         html = Html()
+# #         self.about_dlg.uiHtmlDlg.setHtml(html.aboutHtml())
+#         
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
         for action in self.actions:
@@ -245,10 +353,27 @@ class QgisLdsPlugin:
         # remove the toolbar
         del self.toolbar
     
+    def run(self):
+        self.loadAllServices()
+        
     def setApiKey(self):
         key = self.apikey_dlg.uTextAPIKey.text()
         self.api_key.set_api_key(key)
-        
+        self.lds_interface.keyChanged()
+    
+    def showSelectedOption(self, item):
+        if item: # TO DO // WHY DO I GET NONE ON START UP
+            if item.text() == 'ALL':
+                self.stacked_widget.setCurrentIndex(0)
+            elif item.text() == 'WFS':
+                self.stacked_widget.setCurrentIndex(0)
+            elif item.text() == 'WMTS':
+                self.stacked_widget.setCurrentIndex(0)
+            elif item.text() == 'Settings':
+                self.stacked_widget.setCurrentIndex(1)
+            elif item.text() == 'About':
+                self.stacked_widget.setCurrentIndex(2)            
+ 
     def userSelection(self, selected):
         sourceIndex = self.proxy_model.mapToSource(selected)
         self.row = self.table_model.selectedRow(sourceIndex.row())
@@ -264,8 +389,7 @@ class QgisLdsPlugin:
         self.proxy_model.setFilterKeyColumn(3)
         self.proxy_model.setFilterCaseSensitivity(Qt.CaseInsensitive)
         self.proxy_model.setFilterRegExp(filter_text)
-    
-    
+        
     def setTableModelView(self):
         # Set Table Model
         data = [['','','','']]
@@ -291,36 +415,47 @@ class QgisLdsPlugin:
 
     def aboutShow(self):
         self.about_dlg.show()
-        
+    
+    def errorDialog(self, error):
+        self.iface.messageBar().pushMessage("Error", error, level=QgsMessageBar.CRITICAL)
+    
+    def requestServiceInfo(self, service):
+        resp = self.lds_interface.getServiceData(service)
+        if resp['err']:
+            self.errorDialog(resp['err'])
+        return resp['info']
+    
     def loadAllServices(self):
         all_data = []
         all_services = {'wmts_data' : 'WMTS',
                         'wms_data' : 'WMS',
-                        'wfs_data' : 'WFS'}
+                         'wfs_data' : 'WFS'}
             
         for data, service in all_services.iteritems():
             if not getattr(self, data):
-                service_data = self.lds_interface.get_service_data(service)
-                setattr(self, data, service_data)
+                service_data = self.requestServiceInfo(service)
             else: service_data = getattr(self, data)
             all_data.extend(service_data)
         self.dataToTable(all_data)
     
-    def loadWMTS(self):
-        if not self.wmts_data:
-            self.wmts_data = self.lds_interface.get_service_data('WMTS')
-        self.dataToTable(self.wmts_data)
+    def loadWMTS(self):        
+        if not self.wmts_data:            
+            self.wmts_data = self.requestServiceInfo('WMTS')
+        if self.wmts_data:
+            self.dataToTable(self.wmts_data)
     
     def loadWMS(self):
-        if not self.wms_data:
-            self.wms_data =  self.lds_interface.get_service_data('WMS')
-        self.dataToTable(self.wms_data)
+        if not self.wms_data:            
+            self.wms_data = self.requestServiceInfo('WMS')
+        if self.wms_data:
+            self.dataToTable(self.wms_data)
     
     def loadWFS(self):
-        if not self.wfs_data:
-            self.wfs_data = self.lds_interface.get_service_data('WFS')
-        self.dataToTable(self.wfs_data)
-    
+        if not self.wfs_data:            
+            self.wfs_data = self.requestServiceInfo('WFS')
+        if self.wfs_data:
+            self.dataToTable(self.wfs_data)
+
     def dataToTable(self, table_data):
         self.table_model.setData(table_data)
         self.table_view.resizeColumnsToContents()   
@@ -341,12 +476,12 @@ class QgisLdsPlugin:
         3/ RANDOMLY SELECT LAYER
         '''
         
-    def manageApiKey(self):
-        curr_key = self.api_key.get_api_key()
-        if curr_key == '':
-            curr_key = 'No API Key stored. Please save a valid API Key'
-        self.apikey_dlg.uTextAPIKey.setPlaceholderText(curr_key)
-        self.apikey_dlg.show()
+#     def manageApiKey(self):
+#         curr_key = self.api_key.get_api_key()
+#         if curr_key == '':
+#             curr_key = 'No API Key stored. Please save a valid API Key'
+#         self.apikey_dlg.uTextAPIKey.setPlaceholderText(curr_key)
+#         self.apikey_dlg.show()
 
     def importDataset(self):
         # MVP read current map projection, make use of OTFP
@@ -358,15 +493,17 @@ class QgisLdsPlugin:
                                   self.layer_title,
                                   self.service.upper())  
         
-        else:
+        elif self.service == "WMS":
             uri = "crs={0}&dpiMode=7&format=image/png&layers={1}-{2}&styles=&url=https://data.linz.govt.nz/services;key={3}/{4}/{1}-{2}?version={5}".format(epsg, self.service_type, self.id, self.api_key.get_api_key(), self.service.lower(), self.version[self.service.lower()])
             layer = QgsRasterLayer(uri,
                                    self.layer_title,
-                                   'wms') # For WMTS and WMS #https://gis.stackexchange.com/questions/207995/how-to-load-a-wmts-layer-in-qgis-using-pyqgis
-                                   #self.service.lower())
-#         #TO DO test if this later gonna work
-#         v = layer.isValid() 
-                            
-        QgsMapLayerRegistry.instance().addMapLayer(layer)
- 
+                                   'wms') 
+        # need to understand more about param requirements here
+        else:
+            uri = "contextualWMSLegend=0&crs={0}&dpiMode=7&format=image/png&layers={1}-{2}&styles=style%3Dauto&tileMatrixSet={0}&url=https://data.linz.govt.nz/services;key={3}/{4}/{5}/{1}/{2}/WMTSCapabilities.xml".format(epsg, self.service_type, self.id, self.api_key.get_api_key(), self.service.lower(), self.version[self.service.lower()])
+            layer = QgsRasterLayer(uri,
+                                   self.layer_title,
+                                   'wms')
+                
+        QgsMapLayerRegistry.instance().addMapLayer(layer) 
         self.service_dlg.close()

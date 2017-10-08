@@ -11,4 +11,5 @@ class ApiKey():
         return key
     
     def set_api_key(self, key):
-        QSettings().setValue('ldsplugin/apikey', key) 
+        QSettings().setValue('ldsplugin/apikey', key)
+        self.api_key = self.get_api_key()
