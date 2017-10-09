@@ -17,7 +17,7 @@
  *                                                                         *
  ***************************************************************************/
 """
-from PyQt4.QtCore import QSettings, QTranslator, qVersion, QCoreApplication, Qt
+from PyQt4.QtCore import QSettings, QTranslator, qVersion, QCoreApplication, Qt, QRegExp
 from PyQt4.QtGui import QAction, QIcon, QListWidgetItem, QSortFilterProxyModel, QHeaderView, QMenu, QToolButton
 from qgis.core import QgsRasterLayer, QgsVectorLayer, QgsMapLayerRegistry
 from qgis.gui import QgsMessageBar
@@ -37,9 +37,6 @@ from gui.Help_dialog  import HelpDialog
 #from gui.Test import Test
 import os.path
 
-
-#temploadWMS
-from qgis.gui import QgsMessageBar
 from owslib import wfs, wms, wmts
 
 # Dev only - debugging
@@ -49,6 +46,23 @@ try:
     from pydevd import settrace, GetGlobalDebugger
 except:
     pass
+
+class CustomSortFilterProxyModel(QSortFilterProxyModel):
+    def __init__(self, parent=None):
+        super(CustomSortFilterProxyModel, self).__init__(parent)
+        self.service_type = ('WMS', 'WMTS', 'WFS')
+        
+    def setServiceType(self, service_type):
+        self.service_type = service_type
+        self.invalidateFilter()
+       
+    def filterAcceptsRow(self, sourceRow, sourceParent):
+        index2 = self.sourceModel().index(sourceRow, 2, sourceParent) # SERVICE TYPE
+        index3 = self.sourceModel().index(sourceRow, 3, sourceParent)
+                  
+        return  (self.sourceModel().data(index2, Qt.DisplayRole) in self.service_type
+            and self.filterRegExp().indexIn(self.sourceModel().data(index3, Qt.DisplayRole)) >= 0) 
+
 
 class QgisLdsPlugin:
     """QGIS Plugin Implementation."""
@@ -63,6 +77,7 @@ class QgisLdsPlugin:
         # Save reference to the QGIS interface
         self.iface = iface        
         self.canvas = self.iface.mapCanvas()
+        self.services_loaded = False
 
         # initialize plugin directory
         self.plugin_dir = os.path.dirname(__file__)
@@ -86,7 +101,6 @@ class QgisLdsPlugin:
 
         self.toolbar = self.iface.addToolBar(u'QgisLdsPlugin')
         self.toolbar.setObjectName(u'QgisLdsPlugin')
-#        self.popup_menu = QMenu(self.toolbar)
         
         self.tool_button = QToolButton()
         
@@ -103,8 +117,9 @@ class QgisLdsPlugin:
         # LDS request interface
         self.api_key = ApiKey()
         self.lds_interface = LdsInterface(self.api_key)
-        
-        self.version = {'wfs': '2.0.0', 'wms': '1.1.1' , 'wmts': '1.0.0'}
+        self.version = {'wfs': '2.0.0', 
+                        'wms': '1.1.1' , 
+                        'wmts': '1.0.0'}
         
     # noinspection PyMethodMayBeStatic
     def tr(self, message):
@@ -117,7 +132,6 @@ class QgisLdsPlugin:
         """
         # noinspection PyTypeChecker,PyArgumentList,PyCallByClass
         return QCoreApplication.translate('QgisLdsPlugin', message)
-
 
     def add_action(
         self,
@@ -137,7 +151,8 @@ class QgisLdsPlugin:
         :type icon_path: str
 
         :param text: Text that should be shown in menu items for this action.
-        :type text: str
+        :type         index1 = self.sourceModel().index(sourceRow, 1, sourceParent)
+        index2 = self.sourceModel().index(sourceRow, 2, sourceParent)text: str
 
         :param callback: Function to be called when the action is triggered.
         :type callback: function
@@ -146,7 +161,7 @@ class QgisLdsPlugin:
             by default. Defaults to True.
         :type enabled_flag: boloadWMSol
 
-        :param add_to_menu: Flag indicating whether the action should also
+        :param add_to_menu: Flag incdicating whether the action should also
             be added to the menu. Defaults to True.
         :type add_to_menu: bool
 
@@ -189,7 +204,6 @@ class QgisLdsPlugin:
                 action)
 
         self.actions.append(action)
-
         return action
 
     def initGui(self):
@@ -202,31 +216,17 @@ class QgisLdsPlugin:
             callback=self.run,
             parent=self.iface.mainWindow())
         
+        
+        # Should some of this be moved, Where Run?
         self.service_dlg = ServiceDialog() # RENAME
         self.stacked_widget = self.service_dlg.qStackedWidget
         self.list_options = self.service_dlg.uListOptions
         self.list_options.itemClicked.connect(self.showSelectedOption)
         self.list_options.itemClicked.emit(self.list_options.item(0))
-        self.warning = self.service_dlg.uLabelWarning
         
-        self.warning.hide()
-        # Change look of list widget
-        self.list_options.setStyleSheet(
-            """ QListWidget {
-                    background-color: rgb(105, 105, 105);
-                    outline: 0;
-                }
-                QListWidget::item {
-                    color: white;
-                    padding: 3px;
-                }
-                QListWidget::item::selected {
-                    color: black;
-                    background-color:palette(Window);
-                    padding-right: 0px;
-                };
-            """
-        )
+        self.warning = self.service_dlg.uLabelWarning
+        self.warning.setStyleSheet('color:red')
+        
                 
         item = QListWidgetItem("ALL")
         image_path = os.path.join(os.path.dirname(__file__), "icons", "OpenRaster.png")
@@ -257,92 +257,16 @@ class QgisLdsPlugin:
         image_path = os.path.join(os.path.dirname(__file__), "icons", "OpenRaster.png")
         item.setIcon(QIcon(image_path))
         self.list_options.addItem(item)
-    
-
-#     def initGui(self):
-#         """Create the menu entries and toolbar icons inside the QGIS GUI."""
-#                 # Create the dialog (after translation) and keep reference
-#         self.service_dlg = ServiceDialog()
-# #         self.apikey_dlg = ApiKeyDialog()
-# #         self.about_dlg = HelpDialog()
-#     
-#         """Create the menu entries and toolbar icons inside the QGIS GUI."""
-# #         icon_path = ':/plugins/QgisLdsPlugin/icon.png'
-# #         self.add_action(
-# #             icon_path,
-# #             text=self.tr(u'Road Maintenance'),
-# #             callback=self.run,
-# #             parent=iface.mainWindow())
-# #         self.setupEnvironment()
-#         
-# #         self.apikey_dlg.buttonBox.accepted.connect(self.setApiKey)
-#         
-# #         icon_path = ':/plugins/QgisLdsPlugin/icon.png'
-# #                 
-# #         self.add_action = self.addAction(
-# #             icon_path,
-# #             text=self.tr(u'Load LDS Services'),
-# #             callback=self.loadAllServices,
-# #             parent=self.iface.mainWindow())
-#         
-# #         self.load_wmts = self.addAction(
-# #             icon_path,
-# #             text=self.tr(u'Load LDS WMTS'),
-# #             callback=self.loadWMTS,
-# #             parent=self.iface.mainWindow())
-# # 
-#         self.load_wms = self.addAction(
-#             icon_path,
-#             text=self.tr(u'Load LDS WMS'),
-#             callback=self.loadWMS,
-#             parent=self.iface.mainWindow())
-# # 
-# #         self.load_wfs = self.addAction(
-# #             icon_path,
-# #             text=self.tr(u'Load LDS WFS'),
-# #             callback=self.loadWFS,
-# #             parent=self.iface.mainWindow())
-# 
-# #         self.im_feeling_lucky = self.addAction(
-# #             icon_path,
-# #             text=self.tr(u"I'm feeling lucky"),
-# #             callback=self.imFeelingLucky,
-# #             parent=self.iface.mainWindow())
-#         #         icon_path = ':/plugins/QgisLdsPlugin/icon.png'
-# #         self.add_action(
-# #             icon_path,
-# #             text=self.tr(u'Road Maintenance'),
-# #             callback=self.run,
-# #             parent=iface.mainWindow())
-# #         self.setupEnvironment()
-# #         self.manage_api_key = self.addAction(
-# #             icon_path,
-# #             text=self.tr(u'Manage API Key'),
-# #             callback=self.manageApi        icon_path = ':/plugins/roads/icons/roads_plugin.png'
-# #Key,
-# #             parent=self.iface.mainWindow())
-# #         
-# #         self.about = self.addActi    def initGui(self):
-# 
-# #             icon_path,
-# #             text=self.tr(u'About'),
-# #             callback=self.aboutShow,
-# #             parent=self.iface.mainWindow())
-#         
-# #         for action in self.actions:
-# #             self.popup_menu.addAction(action)
-# #         
-# #         self.tool_button.setMenu(self.popup_menu)
-# #         self.tool_button.setDefaultAction(self.about)
-# #         self.tool_button.setPopupMode(QToolButton.MenuButtonPopup)
-# #         self.toolbar.addWidget( self.tool_button )
-#         
+        
+        # add placeholder api key to ui
+        self.showApiKey()
+        
         #set table model
         self.setTableModelView()
-#         #set about html
-# #         html = Html()
-# #         self.about_dlg.uiHtmlDlg.setHtml(html.aboutHtml())
-#         
+        #set about html
+        html = Html()
+        self.service_dlg.hAboutHtml.setHtml(html.aboutHtml())
+        
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
         for action in self.actions:
@@ -354,20 +278,46 @@ class QgisLdsPlugin:
         del self.toolbar
     
     def run(self):
-        self.loadAllServices()
+        # load data to tables if API key has been set
+        if not self.api_key.get_api_key():
+            self.warning.setText('ERROR: You must provide an LDS API key - see settings')
+            self.warning.show() 
+        else:    
+            load_data_err = self.loadAllServices()
+            if load_data_err:
+                self.warning.setText(load_data_err)
+                self.warning.show()
+            else:
+                self.warning.hide()
+        self.service_dlg.show() 
         
     def setApiKey(self):
-        key = self.apikey_dlg.uTextAPIKey.text()
+        key = self.service_dlg.uTextAPIKey_2.text() #TODO remove "_2"
         self.api_key.set_api_key(key)
         self.lds_interface.keyChanged()
+        self.warning.hide()
+        self.services_loaded = False # key change, load data again
+        self.loadAllServices()
+        
+    def showApiKey(self):
+        curr_key = self.api_key.get_api_key()
+        if curr_key == '':
+            curr_key = 'No API Key stored. Please save a valid API Key'
+        self.service_dlg.uTextAPIKey_2.setPlaceholderText(curr_key)
     
     def showSelectedOption(self, item):
         if item: # TO DO // WHY DO I GET NONE ON START UP
             if item.text() == 'ALL':
                 self.stacked_widget.setCurrentIndex(0)
+                self.proxy_model.setServiceType(('WMS', 'WMTS', 'WFS'))
             elif item.text() == 'WFS':
+                self.proxy_model.setServiceType((item.text()))
                 self.stacked_widget.setCurrentIndex(0)
             elif item.text() == 'WMTS':
+                self.proxy_model.setServiceType((item.text()))
+                self.stacked_widget.setCurrentIndex(0)
+            elif item.text() == 'WMS':
+                self.proxy_model.setServiceType((item.text()))
                 self.stacked_widget.setCurrentIndex(0)
             elif item.text() == 'Settings':
                 self.stacked_widget.setCurrentIndex(1)
@@ -386,16 +336,18 @@ class QgisLdsPlugin:
     
     def filterTable(self):
         filter_text = self.service_dlg.uTextFilter.text()
-        self.proxy_model.setFilterKeyColumn(3)
         self.proxy_model.setFilterCaseSensitivity(Qt.CaseInsensitive)
+        self.proxy_model.setFilterKeyColumn(3)
         self.proxy_model.setFilterRegExp(filter_text)
-        
+    
     def setTableModelView(self):
         # Set Table Model
         data = [['','','','']]
         
         headers = ['type','id', 'service', 'layer', 'hidden']
-        self.proxy_model = QSortFilterProxyModel()
+        self.proxy_model = CustomSortFilterProxyModel()
+        #self.proxy_model = QSortFilterProxyModel()
+        #self.proxy_model.setDynamicSortFilter(True)
         self.table_view = self.service_dlg.uDatasetsTableView
         self.table_model = LDSTableModel(data, headers)
         self.proxy_model.setSourceModel(self.table_model)
@@ -412,77 +364,59 @@ class QgisLdsPlugin:
         
         # Import Button Clicked
         self.service_dlg.uBtnImport.clicked.connect(self.importDataset)
+        
+        # Save API Key Cicked
+        self.service_dlg.uBtnSaveApiKey.clicked.connect(self.setApiKey)
 
-    def aboutShow(self):
-        self.about_dlg.show()
+#     def errorDialog(self, error):
+#         self.iface.messageBar().pushMessage("Error", error, level=QgsMessageBar.CRITICAL)
     
-    def errorDialog(self, error):
-        self.iface.messageBar().pushMessage("Error", error, level=QgsMessageBar.CRITICAL)
-    
+    # Also alittle redundant, did handle errors
     def requestServiceInfo(self, service):
         resp = self.lds_interface.getServiceData(service)
+        return resp
+
+    def responseHandler(self, resp):
         if resp['err']:
-            self.errorDialog(resp['err'])
-        return resp['info']
+            return resp['err']
+        return None
     
     def loadAllServices(self):
+        # Dont reload, least API key changed
+        if self.services_loaded:
+            return
         all_data = []
-        all_services = {'wmts_data' : 'WMTS',
-                        'wms_data' : 'WMS',
-                         'wfs_data' : 'WFS'}
-            
-        for data, service in all_services.iteritems():
-            if not getattr(self, data):
-                service_data = self.requestServiceInfo(service)
-            else: service_data = getattr(self, data)
-            all_data.extend(service_data)
+        all_services = ['loadWMTS', 'loadWMS', 'loadWFS']
+        for service in all_services:                
+            service_data = getattr(self, service)()
+            resp_err = self.responseHandler(service_data)
+            if resp_err:
+                return resp_err
+                break
+            all_data.extend(service_data['info'])
         self.dataToTable(all_data)
+        self.services_loaded = True
+        return None
     
-    def loadWMTS(self):        
-        if not self.wmts_data:            
-            self.wmts_data = self.requestServiceInfo('WMTS')
-        if self.wmts_data:
-            self.dataToTable(self.wmts_data)
+    # A little redundant but gives 
+    # option in future to just select one services
+    # rather than going through the loadAll method
+    def loadWMTS(self):                  
+        self.wmts_data = self.requestServiceInfo('WMTS')
+        return self.wmts_data
     
     def loadWMS(self):
-        if not self.wms_data:            
-            self.wms_data = self.requestServiceInfo('WMS')
-        if self.wms_data:
-            self.dataToTable(self.wms_data)
+        self.wms_data = self.requestServiceInfo('WMS')
+        return self.wms_data
     
     def loadWFS(self):
-        if not self.wfs_data:            
-            self.wfs_data = self.requestServiceInfo('WFS')
-        if self.wfs_data:
-            self.dataToTable(self.wfs_data)
+        self.wfs_data = self.requestServiceInfo('WFS')
+        return self.wfs_data
 
     def dataToTable(self, table_data):
         self.table_model.setData(table_data)
         self.table_view.resizeColumnsToContents()   
-        self.service_dlg.show() 
-    
-    def imFeelingLucky(self):
-        pass
-        # place holder - pop up "GO TO JAIL: Go directly to Jail. Do not pass Go. Do not collect $200"
-        #OR "You Have won SECOND PRIZE in a BEAUTY CONTEST collect $10"
-        # Community chest
         
-        ''' IF DICTIONARY HAS SOME DATA MAKE SELECTION FROM THIS DATA.
-        ELSE RANDOMLY SELECT A DATA TYPE AND ADD
-        
-        THEREFORE THREE METHODS.
-        1/ HAS DATA
-        2/ RANDOMLLY SELECT DATA TYPE
-        3/ RANDOMLY SELECT LAYER
-        '''
-        
-#     def manageApiKey(self):
-#         curr_key = self.api_key.get_api_key()
-#         if curr_key == '':
-#             curr_key = 'No API Key stored. Please save a valid API Key'
-#         self.apikey_dlg.uTextAPIKey.setPlaceholderText(curr_key)
-#         self.apikey_dlg.show()
-
     def importDataset(self):
         # MVP read current map projection, make use of OTFP
         epsg = self.canvas.mapRenderer().destinationCrs().authid() 
@@ -491,7 +425,7 @@ class QgisLdsPlugin:
             url = ("https://data.linz.govt.nz/services;key={0}/{1}?SERVICE={1}&VERSION={2}&REQUEST=GetFeature&TYPENAME=data.linz.govt.nz:{3}-{4}").format(self.api_key.get_api_key(), self.service.lower(), self.version[self.service.lower()], self.service_type, self.id)
             layer = QgsVectorLayer(url,
                                   self.layer_title,
-                                  self.service.upper())  
+                                  self.service.upper(QSortFilterProxyModel))  
         
         elif self.service == "WMS":
             uri = "crs={0}&dpiMode=7&format=image/png&layers={1}-{2}&styles=&url=https://data.linz.govt.nz/services;key={3}/{4}/{1}-{2}?version={5}".format(epsg, self.service_type, self.id, self.api_key.get_api_key(), self.service.lower(), self.version[self.service.lower()])
@@ -507,3 +441,6 @@ class QgisLdsPlugin:
                 
         QgsMapLayerRegistry.instance().addMapLayer(layer) 
         self.service_dlg.close()
+        
+
+

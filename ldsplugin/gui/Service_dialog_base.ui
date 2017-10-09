@@ -6,12 +6,12 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>930</width>
-    <height>685</height>
+    <width>897</width>
+    <height>678</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Dialog</string>
+   <string>Import LDS Data Sets</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
    <item row="0" column="0">
@@ -71,10 +71,16 @@
         <property name="currentIndex">
          <number>2</number>
         </property>
-        <widget class="QWidget" name="swTableView" native="true">
+        <widget class="QWidget" name="swTableView">
          <layout class="QVBoxLayout" name="verticalLayout_9">
           <item>
            <widget class="QLabel" name="uLabelWarning">
+            <property name="font">
+             <font>
+              <weight>75</weight>
+              <bold>true</bold>
+             </font>
+            </property>
             <property name="text">
              <string/>
             </property>
@@ -91,7 +97,7 @@
             <item>
              <widget class="QLabel" name="uLabelDatasets">
               <property name="text">
-               <string>Filter DataSets</string>
+               <string>Filter Data Sets</string>
               </property>
              </widget>
             </item>
@@ -114,6 +120,13 @@
            </widget>
           </item>
           <item>
+           <widget class="QPushButton" name="uBtnImport">
+            <property name="text">
+             <string>Import Dataset</string>
+            </property>
+           </widget>
+          </item>
+          <item>
            <widget class="QTextEdit" name="uTextDescription">
             <property name="maximumSize">
              <size>
@@ -123,134 +136,127 @@
             </property>
            </widget>
           </item>
-          <item>
-           <widget class="QPushButton" name="uBtnImport">
-            <property name="text">
-             <string>Import Dataset</string>
-            </property>
-           </widget>
-          </item>
          </layout>
         </widget>
         <widget class="QWidget" name="swSettings">
-         <widget class="QLabel" name="label_3">
+         <widget class="QWidget" name="verticalLayoutWidget">
           <property name="geometry">
            <rect>
             <x>10</x>
-            <y>10</y>
-            <width>505</width>
-            <height>102</height>
+            <y>0</y>
+            <width>751</width>
+            <height>661</height>
            </rect>
           </property>
-          <property name="text">
-           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;&lt;br/&gt;&lt;/span&gt;&lt;span style=&quot; font-size:14pt; font-weight:600;&quot;&gt;API KEY:&lt;/span&gt;&lt;/p&gt;&lt;p&gt;Please add your API key here to allow connection to the LINZ Data Service.&lt;br/&gt;For more, please see the &lt;a href=&quot;http://www.linz.govt.nz/data/linz-data-service/guides-and-documentation/creating-an-api-key&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0000ff;&quot;&gt;LINZ website&lt;/span&gt;&lt;/a&gt;&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-          </property>
-          <property name="openExternalLinks">
-           <bool>true</bool>
-          </property>
-         </widget>
-         <widget class="QWidget" name="layoutWidget">
-          <property name="geometry">
-           <rect>
-            <x>160</x>
-            <y>140</y>
-            <width>210</width>
-            <height>29</height>
-           </rect>
-          </property>
-          <layout class="QHBoxLayout" name="horizontalLayout_2">
+          <layout class="QVBoxLayout" name="verticalLayout_2">
            <item>
-            <widget class="QLineEdit" name="uTextAPIKey">
-             <property name="minimumSize">
-              <size>
-               <width>0</width>
-               <height>20</height>
-              </size>
+            <widget class="QLabel" name="label_3">
+             <property name="text">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;&lt;br/&gt;&lt;/span&gt;&lt;span style=&quot; font-size:14pt; font-weight:600;&quot;&gt;API KEY:&lt;/span&gt;&lt;/p&gt;&lt;p&gt;Please add your API key here to allow connection to the LINZ Data Service.&lt;br/&gt;For more, please see the &lt;a href=&quot;http://www.linz.govt.nz/data/linz-data-service/guides-and-documentation/creating-an-api-key&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0000ff;&quot;&gt;LINZ website&lt;/span&gt;&lt;/a&gt;&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
-             <property name="focusPolicy">
-              <enum>Qt::ClickFocus</enum>
-             </property>
-             <property name="frame">
+             <property name="openExternalLinks">
               <bool>true</bool>
              </property>
             </widget>
            </item>
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_3">
+             <item>
+              <widget class="QLabel" name="label_4">
+               <property name="text">
+                <string>API Key:</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLineEdit" name="uTextAPIKey_2">
+               <property name="minimumSize">
+                <size>
+                 <width>0</width>
+                 <height>0</height>
+                </size>
+               </property>
+               <property name="focusPolicy">
+                <enum>Qt::ClickFocus</enum>
+               </property>
+               <property name="frame">
+                <bool>true</bool>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="uBtnSaveApiKey">
+               <property name="minimumSize">
+                <size>
+                 <width>0</width>
+                 <height>0</height>
+                </size>
+               </property>
+               <property name="text">
+                <string>Save</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <spacer name="horizontalSpacer">
+               <property name="orientation">
+                <enum>Qt::Horizontal</enum>
+               </property>
+               <property name="sizeHint" stdset="0">
+                <size>
+                 <width>40</width>
+                 <height>20</height>
+                </size>
+               </property>
+              </spacer>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <spacer name="verticalSpacer">
+             <property name="orientation">
+              <enum>Qt::Vertical</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>20</width>
+               <height>40</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
           </layout>
          </widget>
-         <widget class="QDialogButtonBox" name="buttonBox">
-          <property name="geometry">
-           <rect>
-            <x>549</x>
-            <y>328</y>
-            <width>505</width>
-            <height>27</height>
-           </rect>
-          </property>
-          <property name="orientation">
-           <enum>Qt::Horizontal</enum>
-          </property>
-          <property name="standardButtons">
-           <set>QDialogButtonBox::Cancel|QDialogButtonBox::Save</set>
-          </property>
-         </widget>
-         <widget class="QLabel" name="label_2">
-          <property name="geometry">
-           <rect>
-            <x>80</x>
-            <y>140</y>
-            <width>56</width>
-            <height>27</height>
-           </rect>
-          </property>
-          <property name="text">
-           <string>API Key:</string>
-          </property>
-         </widget>
-         <zorder>label_3</zorder>
-         <zorder>layoutWidget</zorder>
-         <zorder>buttonBox</zorder>
-         <zorder>label_2</zorder>
-         <zorder>uTextAPIKey</zorder>
         </widget>
         <widget class="QWidget" name="swAbout">
-         <widget class="QTextEdit" name="textEdit">
+         <widget class="QWidget" name="gridLayoutWidget">
           <property name="geometry">
            <rect>
-            <x>10</x>
-            <y>10</y>
-            <width>701</width>
-            <height>641</height>
+            <x>-1</x>
+            <y>-1</y>
+            <width>761</width>
+            <height>661</height>
            </rect>
           </property>
-          <property name="html">
-           <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+          <layout class="QGridLayout" name="gridLayout_2">
+           <item row="0" column="0">
+            <widget class="QTextEdit" name="hAboutHtml">
+             <property name="autoFillBackground">
+              <bool>true</bool>
+             </property>
+             <property name="readOnly">
+              <bool>true</bool>
+             </property>
+             <property name="html">
+              <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
 &lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
 p, li { white-space: pre-wrap; }
 &lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Ubuntu'; font-size:11pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;            &amp;lt;img src=&amp;quot;{0}/linz_logo.png&amp;quot; alt=&amp;quot;LINZ logo&amp;quot; style=&amp;quot;width:249px;height:74px;&amp;quot;&amp;gt;&lt;/p&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;            &amp;lt;h2&amp;gt;&amp;lt;span style=&amp;quot;color: #3366ff;&amp;quot;&amp;gt;LDS QsdsdGIS Plugin&amp;lt;/span&amp;gt;&amp;lt;/h2&amp;gt;&lt;/p&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;            &amp;lt;h3&amp;gt;&amp;amp;nbsp;&amp;lt;/h3&amp;gt;&lt;/p&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;            &amp;lt;p&amp;gt;The plugin allows the coupling of the &amp;lt;a href=&amp;quot;https://data.linz.govt.nz/data/&amp;quot;&amp;gt;LINZ Data Services (LDS)&amp;lt;/a&amp;gt;&amp;amp;nbsp;and QGIS to provide simple improting of LINZ data.&amp;amp;nbsp;&amp;lt;/p&amp;gt;&lt;/p&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;            &amp;lt;h4&amp;gt;&amp;amp;nbsp;&amp;lt;/h4&amp;gt;&lt;/p&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;            &amp;lt;h4&amp;gt;&amp;lt;span style=&amp;quot;color: #3366ff;&amp;quot;&amp;gt;Selecting a Service&amp;amp;nbsp;&amp;lt;/span&amp;gt;&amp;lt;/h4&amp;gt;&lt;/p&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;            &amp;lt;p&amp;gt;Please see the excellent &amp;lt;a href=&amp;quot;http://www.linz.govt.nz/data/linz-data-service/guides-and-documentation/which-web-service-should-i-use&amp;quot;&amp;gt;online resource&amp;lt;/a&amp;gt;&amp;amp;nbsp;available on the LINZ website concerning the available services&amp;lt;/p&amp;gt;&lt;/p&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;            &amp;lt;p&amp;gt;&amp;lt;span style=&amp;quot;color: #3366ff;&amp;quot;&amp;gt;&amp;amp;nbsp;&amp;lt;/span&amp;gt;&amp;lt;/p&amp;gt;&lt;/p&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;            &amp;lt;h4&amp;gt;&amp;lt;span style=&amp;quot;color: #3366ff;&amp;quot;&amp;gt;API Key&amp;amp;nbsp;&amp;lt;/span&amp;gt;&amp;lt;/h4&amp;gt;&lt;/p&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;            &amp;lt;p&amp;gt;Prior to using the plugin your LDS API Key must be stored via the drop down menu item &amp;quot;Manage API Key&amp;quot;. For more on this please see the LDS&amp;amp;nbsp;&amp;lt;a href=&amp;quot;http://www.linz.govt.nz/data/linz-data-service/guides-and-documentation/creating-an-api-key&amp;quot;&amp;gt;resources&amp;lt;/a&amp;gt;.&amp;lt;/p&amp;gt;&lt;/p&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;            &amp;lt;h4&amp;gt;&amp;amp;nbsp;&amp;lt;/h4&amp;gt;&lt;/p&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;            &amp;lt;h4&amp;gt;&amp;lt;span style=&amp;quot;color: #3366ff;&amp;quot;&amp;gt;Requests, Responses and&amp;amp;nbsp;Patience&amp;lt;/span&amp;gt;&amp;lt;/h4&amp;gt;&lt;/p&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;            &amp;lt;p&amp;gt;Explaing a little about the plugings approach to making requests to the LDS may help with your patience.&amp;lt;/p&amp;gt;&lt;/p&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;            &amp;lt;p&amp;gt;&amp;amp;nbsp;&amp;lt;/p&amp;gt;&lt;/p&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;            &amp;lt;p&amp;gt;When making an request to a service ( WMTS, WFS, WMS ) for the first time, the QGIS interface will be temperarly inactive while awating the LDS server response. However after the intial request to view a service the services information is stored locally and all subquntial &amp;amp;nbsp;requests for the QGIS session will popuate the layers table instantly&amp;lt;/p&amp;gt;&lt;/p&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;            &amp;lt;p&amp;gt;&amp;amp;nbsp;&amp;lt;/p&amp;gt;&lt;/p&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;            &amp;lt;h4&amp;gt;&amp;lt;span style=&amp;quot;color: #3366ff;&amp;quot;&amp;gt;Filtering&amp;lt;/span&amp;gt;&amp;lt;/h4&amp;gt;&lt;/p&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;            &amp;lt;h4&amp;gt;&amp;amp;nbsp;&amp;lt;/h4&amp;gt;&lt;/p&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;            &amp;lt;h4&amp;gt;&amp;lt;span style=&amp;quot;color: #3366ff;&amp;quot;&amp;gt;Resources&amp;lt;/span&amp;gt;&amp;lt;/h4&amp;gt;&lt;/p&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;            &amp;lt;p&amp;gt;&amp;amp;nbsp;&amp;lt;/p&amp;gt;&lt;/p&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;            &amp;lt;p&amp;gt;&amp;amp;nbsp;&amp;lt;/p&amp;gt;&lt;/p&gt;
 &lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-          </property>
+             </property>
+            </widget>
+           </item>
+          </layout>
          </widget>
         </widget>
        </widget>

@@ -24,13 +24,6 @@ class LdsInterface():
                      'resp': None,
                      'info': None}
         
-        # Ensure an API Key has been stored
-        if not self.hasKey():
-            self.resp['err'] = "Missing API Key. Please supply an LDS API key (plugin's menu > API Key)"
-            return self.resp
-        
-        # TODO // GET SO MANT TIMEOUTS. must habdle these
-        
         # Request - Get Info for the service
         self.request(service)
         if self.resp['err']:
@@ -51,13 +44,13 @@ class LdsInterface():
             if service == 'WMTS':
                 self.resp['resp'] = WebMapTileService('https://data.linz.govt.nz/services;key='+self.key+'/wmts/1.0.0/WMTSCapabilities.xml?count=10', version='1.0.0')
                 return
-                #return WebMapTileService('https://data.linz.govt.nz/services;key='+self.key+'/wmts/1.0.0/layer/1455/WMTSCapabilities.xml?count=10', version='1.0.0')
             if service == 'WFS':
                 self.resp['resp'] = WebFeatureService('https://data.linz.govt.nz/services;key='+self.key+'/wfs/?service=WFS&request=GetCapabilities', version='1.1.0')
                 return
         
         except:
-            resp['err'] = "Something went wrong with the request. Timeout??? wrong key ???"
+            self.resp['err'] = "ERROR: Something went wrong with the request. Timeout? Inccorrect API KEY"
+
         #    pass
             #how do I get at owslibs exceptions?
                         
