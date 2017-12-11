@@ -209,7 +209,7 @@ class QgisLdsPlugin:
     def initGui(self):
         """Create the menu entries and toolbar icons inside the QGIS GUI."""
 
-        icon_path = ':/plugins/QgisLdsPlugin/icon.png'
+        icon_path = ':/plugins/QgisLdsPlugin/icons/icon.png'
         self.add_action(
             icon_path,
             text=self.tr(u'Load LDS Data'),
@@ -422,19 +422,53 @@ class QgisLdsPlugin:
         epsg = self.canvas.mapRenderer().destinationCrs().authid() 
         
         if self.service == "WFS":        
-            url = ("https://data.linz.govt.nz/services;key={0}/{1}?SERVICE={1}&VERSION={2}&REQUEST=GetFeature&TYPENAME=data.linz.govt.nz:{3}-{4}").format(self.api_key.get_api_key(), self.service.lower(), self.version[self.service.lower()], self.service_type, self.id)
+            url = ("https://data.linz.govt.nz/services;"
+                   "key={0}/{1}?"
+                   "SERVICE={1}&"
+                   "VERSION={2}&"
+                   "REQUEST=GetFeature&"
+                   "TYPENAME=data.linz.govt.nz:{3}-{4}").format(self.api_key.get_api_key(), 
+                                                                self.service.lower(), 
+                                                                self.version[self.service.lower()], 
+                                                                self.service_type, 
+                                                                self.id)
             layer = QgsVectorLayer(url,
                                   self.layer_title,
-                                  self.service.upper(QSortFilterProxyModel))  
+                                  self.service.upper())  
         
         elif self.service == "WMS":
-            uri = "crs={0}&dpiMode=7&format=image/png&layers={1}-{2}&styles=&url=https://data.linz.govt.nz/services;key={3}/{4}/{1}-{2}?version={5}".format(epsg, self.service_type, self.id, self.api_key.get_api_key(), self.service.lower(), self.version[self.service.lower()])
+            uri = ("crs={0}&"
+                   "dpiMode=7&"
+                   "format=image/png&"
+                   "layers={1}-{2}&"
+                   "styles=&"
+                   "url=https://data.linz.govt.nz/services;"
+                   "key={3}/{4}/{1}-{2}?"
+                   "version={5}").format(epsg, 
+                                        self.service_type, 
+                                        self.id, 
+                                        self.api_key.get_api_key(), 
+                                        self.service.lower(), 
+                                        self.version[self.service.lower()])
+            
             layer = QgsRasterLayer(uri,
                                    self.layer_title,
                                    'wms') 
+        
         # need to understand more about param requirements here
         else:
-            uri = "contextualWMSLegend=0&crs={0}&dpiMode=7&format=image/png&layers={1}-{2}&styles=style%3Dauto&tileMatrixSet={0}&url=https://data.linz.govt.nz/services;key={3}/{4}/{5}/{1}/{2}/WMTSCapabilities.xml".format(epsg, self.service_type, self.id, self.api_key.get_api_key(), self.service.lower(), self.version[self.service.lower()])
+            epsg = '3857'
+            uri = ("IgnoreAxisOrientation=1&SmoothPixmapTransform=1&"
+                   "contextualWMSLegend=0&crs={0}&dpiMode=7&format=image/png&"
+                   "layers={1}-{2}&styles=style%3Dauto&tileMatrixSet={0}&"
+                   "url=https://data.linz.govt.nz/services;"
+                   "key={3}/{4}/{5}/{1}/{2}/"
+                   "WMTSCapabilities.xml").format(epsg,
+                                                self.service_type, 
+                                                self.id, 
+                                                self.api_key.get_api_key(), 
+                                                self.service.lower(), 
+                                                self.version[self.service.lower()])
             layer = QgsRasterLayer(uri,
                                    self.layer_title,
                                    'wms')

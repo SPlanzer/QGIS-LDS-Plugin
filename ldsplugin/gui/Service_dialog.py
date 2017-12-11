@@ -33,11 +33,12 @@ class ServiceDialog(QtGui.QDialog, FORM_CLASS):
             """
         )
         
-        self.hAboutHtml.setStyleSheet(
-            """ QTextEdit {
-                    background-color:palette(Window);
-                    outline: 0;
-                }
-            """ 
-           )
-            
+#         # add grey back ground to html view
+#         self.hAboutHtml.setStyleSheet(
+#             """ QTextEdit {
+#                     background-color:palette(Window);
+#                     outline: 0;
+#                 }
+#             """ 
+#            )
+#             

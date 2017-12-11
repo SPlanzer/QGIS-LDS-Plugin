@@ -33,23 +33,36 @@ class LdsInterface():
         self.service_info()
         
         return self.resp
-        
-    
+
+
     def request(self, service):
 
         try: 
+
             if service == 'WMS':
-                self.resp['resp'] = WebMapService('https://data.linz.govt.nz/services;key='+self.key+'/wms/', version='1.1.1')
+                self.resp['resp'] = WebMapService("https://data.linz.govt.nz/services;"
+                                                  "key="+self.key+
+                                                  "/wms/", 
+                                                  version='1.1.1')
                 return
             if service == 'WMTS':
-                self.resp['resp'] = WebMapTileService('https://data.linz.govt.nz/services;key='+self.key+'/wmts/1.0.0/WMTSCapabilities.xml?count=10', version='1.0.0')
+                self.resp['resp'] = WebMapTileService("https://data.linz.govt.nz/services;"
+                                                      "key="+self.key+
+                                                      "/wmts/1.0.0/WMTSCapabilities.xml?"
+                                                      "count=10", 
+                                                      version='1.0.0')
                 return
             if service == 'WFS':
-                self.resp['resp'] = WebFeatureService('https://data.linz.govt.nz/services;key='+self.key+'/wfs/?service=WFS&request=GetCapabilities', version='1.1.0')
+                self.resp['resp'] = WebFeatureService("https://data.linz.govt.nz/services;"
+                                                      "key="+self.key+
+                                                      "/wfs/?"
+                                                      "service=WFS&"
+                                                      "request=GetCapabilities",
+                                                       version='1.1.0')
                 return
         
         except:
-            self.resp['err'] = "ERROR: Something went wrong with the request. Timeout? Inccorrect API KEY"
+            self.resp['err'] = "ERROR: Something went wrong with the request. Timeout? Incorrect API KEY?"
 
         #    pass
             #how do I get at owslibs exceptions?
